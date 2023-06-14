@@ -1,14 +1,20 @@
 from sqlalchemy.orm import Session
 
-from . import models, schemas
+from .models import Vehicle
+from . import schemas
 
 
 def get_vehicle(db: Session, vin: str):
-    return db.query(models.Vehicle).filter(models.Vehicle.vin == vin).first()
+    """Return all fields for a single vehicle from the db."""
+    return db.query(Vehicle).filter(Vehicle.vin == vin).first()
 
 
 def create_vehicle(db: Session, vehicle: schemas.VehicleCreate):
-    db_vehicle = models.Vehicle(**vehicle)
+    """Add a vehicle to the database."""
+    # I'm making all lowercase and replacing spaces so field names will match
+    # models.
+    vehicle_correct_keys = {k.lower().replace(" ", "_"): v for k, v in vehicle.items()}
+    db_vehicle = Vehicle(**vehicle_correct_keys)
     db.add(db_vehicle)
     db.commit()
     db.refresh(db_vehicle)
@@ -16,4 +22,5 @@ def create_vehicle(db: Session, vehicle: schemas.VehicleCreate):
 
 
 def get_all_vehicles(db: Session):
-    return db.query(models.Vehicle).all()
+    """Return all data for all rows in db."""
+    return db.query(Vehicle).all()

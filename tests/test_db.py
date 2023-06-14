@@ -33,11 +33,55 @@ def test_create_vehicle():
     response = client.get("/lookup/1XP5DB9X7XD487964")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["vin"] == "1XP5DB9X7XD487964"
+    assert data["VIN"] == "1XP5DB9X7XD487964"
     assert not data["Cached Result?"]
 
     response = client.get("/lookup/1XP5DB9X7XD487964")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["vin"] == "1XP5DB9X7XD487964"
+    assert data["VIN"] == "1XP5DB9X7XD487964"
     assert data["Cached Result?"]
+
+
+def test_lookup_vin_not_in_cache():
+    client.delete("/remove/1M2AX09C88M003743")
+    response = client.get("/lookup/1M2AX09C88M003743")
+    assert response.status_code == 200
+    assert response.json() == {
+        "Body Class": "Truck",
+        "Cached Result?": False,
+        "Make": "MACK",
+        "Model": "GU (Granite)",
+        "Model Year": "2008",
+        "VIN": "1M2AX09C88M003743",
+    }
+
+
+def test_vin_does_not_exist_at_dot():
+    response = client.get("/lookup/1XP5DB9X7XD487945")
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "1XP5DB9X7XD487945 1 - Check Digit (9th position) does not calculate properly"
+    }
+
+
+def test_remove_cached_vin():
+    client.get("/lookup/1XP5DB9X7XD487964")
+    response = client.get("/lookup/1XP5DB9X7XD487964")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["VIN"] == "1XP5DB9X7XD487964"
+    assert data["Cached Result?"]
+    response = client.delete("/remove/1XP5DB9X7XD487964")
+    assert response.status_code == 200
+    assert response.json() == {"Success": True}
+    # Now make sure it's actually removed. This should return false.
+    response = client.delete("/remove/1XP5DB9X7XD487964")
+    assert response.status_code == 200
+    assert response.json() == {"Success": False}
+
+
+def test_fail_remove_not_cached_vin():
+    response = client.delete("/remove/1XP5DB9X7XD487964")
+    assert response.status_code == 200
+    assert not response.json()["Success"]
