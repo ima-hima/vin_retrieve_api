@@ -30,4 +30,10 @@
 
 
 ##### Running the project
-
+Set up virtual environment of your choice. This is running locally on my machine using Python 3.8.5.
+`git clone`
+`cd /vin_retrieve_api`
+`pip install -r requirements.txt`
+`alembic upgrade head`
+`cd ..`
+`uvicorn vin_retrieve_api.main:app --reload`
