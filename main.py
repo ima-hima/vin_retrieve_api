@@ -37,8 +37,17 @@ async def lookup(vin: Optional[str] = None):
     # Also, only getting a single record on the first call because we just
     # need the number of results.
     r = requests.get(url=url)
-    print(r)
-    return {"msg": f"Lookup {r}"}
+    desired_variables = set(["Make", "Model", "Model Year", "Body Class", "Error Code", "Error Text", "Additional Error Text",])
+    vehicle_details = {item["Variable"]: item["Value"] for item in r.json()["Results"] if item["Variable"] in desired_variables}
+    vehicle_details["VIN"] = vin
+
+    if vehicle_details["Error Code"] == "1":
+        error_message = f"{vin} {vehicle_details['Error Text']}"
+        if vehicle_details['Additional Error Text']:
+            error_message += f"{vehicle_details['Additional Error Text']}"
+        raise HTTPException(status_code=404, detail=error_message)
+
+    return {"msg": f"Lookup {vehicle_details}"}
 
 
 @app.get("/remove/{vin}")
