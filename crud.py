@@ -14,5 +14,6 @@ def create_vehicle(db: Session, vehicle: schemas.VehicleCreate):
     db.refresh(db_vehicle)
     return db_vehicle
 
+
 def get_all_vehicles(db: Session):
     return db.query(models.Vehicle).all()

@@ -21,4 +21,3 @@ class Vehicle(VehicleBase):
 
     class Config:
         orm_mode = True
-

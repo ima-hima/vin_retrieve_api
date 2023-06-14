@@ -20,11 +20,12 @@ def get_db():
     finally:
         db.close()
 
+
 @app.get("/")
 def root():
     raise HTTPException(
-            status_code=404, detail="Appropriate endpoints are lookup, remove, export."
-        )
+        status_code=404, detail="Appropriate endpoints are lookup, remove, export."
+    )
 
 
 @app.get("/lookup/{vin}")
@@ -52,15 +53,29 @@ def lookup(vin: Optional[str] = None, db: Session = Depends(get_db)):
         # VIN isn't in cache, so get details from dot.gov.
         url = f"https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/{vin}?format=json"
         r = requests.get(url=url)
-        desired_variables = set(["Make", "Model", "Model Year", "Body Class", "Error Code", "Error Text", "Additional Error Text",])
+        desired_variables = set(
+            [
+                "Make",
+                "Model",
+                "Model Year",
+                "Body Class",
+                "Error Code",
+                "Error Text",
+                "Additional Error Text",
+            ]
+        )
         # Note here that I'm forced to change names of keys so they play well
         # with the database.
-        vehicle_details = {item["Variable"].lower().replace(" ", "_"): item["Value"] for item in r.json()["Results"] if item["Variable"] in desired_variables}
+        vehicle_details = {
+            item["Variable"].lower().replace(" ", "_"): item["Value"]
+            for item in r.json()["Results"]
+            if item["Variable"] in desired_variables
+        }
         vehicle_details["vin"] = vin
 
         if vehicle_details["error_code"] == "1":
             error_message = f"{vin} {vehicle_details['error_text']}"
-            if vehicle_details['additional_error_text']:
+            if vehicle_details["additional_error_text"]:
                 error_message += f"{vehicle_details['additional_error_text']}"
             raise HTTPException(status_code=404, detail=error_message)
         else:
@@ -88,7 +103,9 @@ def remove(vin: Optional[str] = None):
         raise HTTPException(
             status_code=404, detail="Invalid VIN. VIN must be 17 characters."
         )
-    return JSONResponse(content=json.loads(f"\{'VIN': {vin}, 'Cache Delete Success': False\}"))
+    return JSONResponse(
+        content=json.loads(f"\{'VIN': {vin}, 'Cache Delete Success': False\}")
+    )
 
 
 @app.get("/export")
