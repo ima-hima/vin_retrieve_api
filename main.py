@@ -38,7 +38,7 @@ async def lookup(vin: Optional[str] = None):
     # need the number of results.
     r = requests.get(url=url)
     print(r)
-    return {"msg": f"Lookup {vin}"}
+    return {"msg": f"Lookup {r}"}
 
 
 @app.get("/remove/{vin}")
