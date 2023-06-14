@@ -29,19 +29,15 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
-def test_create_user():
-    response = client.post(
-        "/users/",
-        json={"email": "deadpool@example.com", "password": "chimichangas4life"},
-    )
+def test_create_vehicle():
+    response = client.get("/lookup/1XP5DB9X7XD487964")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["email"] == "deadpool@example.com"
-    assert "id" in data
-    user_id = data["id"]
+    assert data["vin"] == "1XP5DB9X7XD487964"
+    assert not data["Cached Result?"]
 
-    response = client.get(f"/users/{user_id}")
+    response = client.get("/lookup/1XP5DB9X7XD487964")
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["email"] == "deadpool@example.com"
-    assert data["id"] == user_id
+    assert data["vin"] == "1XP5DB9X7XD487964"
+    assert data["Cached Result?"]

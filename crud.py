@@ -4,7 +4,7 @@ from . import models, schemas
 
 
 def get_vehicle(db: Session, vin: str):
-    return db.query(models.Vehicle).filter(models.Vehicle.id == vin).first()
+    return db.query(models.Vehicle).filter(models.Vehicle.vin == vin).first()
 
 
 def create_vehicle(db: Session, vehicle: schemas.VehicleCreate):

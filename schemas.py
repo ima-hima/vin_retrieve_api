@@ -8,11 +8,11 @@ class VehicleBase(BaseModel):
     description: Union[str, None] = None
 
 
-class VehicleCreate(ItemBase):
+class VehicleCreate(VehicleBase):
     pass
 
 
-class Vehicle(ItemBase):
+class Vehicle(VehicleBase):
     vin: str
     make: str
     model: str
