@@ -1,13 +1,16 @@
 import json
-from typing import Optional
+import os
+from tempfile import gettempdir
+from typing import Dict, Optional
+from uuid import uuid4
 
 import pandas as pd
+import pyarrow as pa
 import pyarrow.parquet as pq
 import requests
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
-
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -22,8 +25,20 @@ def get_db():
     finally:
         db.close()
 
+
+def create_vehicle_dict(vehicle: models.Vehicle) -> Dict[str, str]:
+    """Pull the fields out of the Vehicle model object by hand. Return a dict."""
+    return {
+        "Make": vehicle.make,
+        "Model": vehicle.model,
+        "Model Year": vehicle.model_year,
+        "Body Class": vehicle.body_class,
+    }
+
+
 @app.get("/")
 def root():
+    """This is just a stub; / doesn't exist as a valid endpoint."""
     raise HTTPException(
         status_code=404, detail="Appropriate endpoints are lookup, remove, export."
     )
@@ -90,20 +105,17 @@ async def lookup(vin: Optional[str] = None, db: Session = Depends(get_db)):
         # The following ugliness because I couldn't figure out how to get fastapi
         # db models to convert to dicts. I thought it would work throuth the
         # .dict() method of Pydantic, but no.
-        vehicle_details = {
-            "Make": vehicle_details_from_cache.make,
-            "Model": vehicle_details_from_cache.model,
-            "Model Year": vehicle_details_from_cache.model_year,
-            "Body Class": vehicle_details_from_cache.body_class,
-            "Cached Result?": True,
-        }
+        vehicle_details = create_vehicle_dict(vehicle_details_from_cache)
+        vehicle_details["Cached Result?"] = True
 
-    res = {k.replace("_", " ").title(): v for k, v in vehicle_details.items() if k != "vin"}
+    res = {
+        k.replace("_", " ").title(): v for k, v in vehicle_details.items() if k != "vin"
+    }
     res["VIN"] = vin
     return JSONResponse(content=res)
 
 
-@app.delete("/remove/{vin}")
+@app.get("/remove/{vin}")
 def remove(vin: Optional[str] = None, db: Session = Depends(get_db)):
     """
     Remove VIN from cache. Return True on success. False on failure. Failure
@@ -124,19 +136,22 @@ def remove(vin: Optional[str] = None, db: Session = Depends(get_db)):
 
 
 @app.get("/export")
-def export():
-    """Export entire cache as parquet file."""
-    data = crud.get_all_vehicles(db)
+def export(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """
+    Export entire cache as parquet file.
+
+    Note that this first writes a file to the directory system, then serves the
+    file, then deletes it. I was unable to get streaming to work."""
+    data = [create_vehicle_dict(v) for v in crud.get_all_vehicles(db)]
+    print("\n\n**", data)
     # Convert to dataframe
-    columns = data.keys()
-    df = pd.DataFrame(data, columns=columns)
+    df = pd.DataFrame(data)
+    # Conver to PyArrow table. Don't bother doing any fancy compression, as it's
+    # just a bunch of strings.
     table = pa.Table.from_pandas(df)
-    # Now stream to parquet format.
-    sink = pa.BufferOutputStream()
-    with pa.ipc.new_stream(sink, batch.schema) as writer:
-        writer.write_batch(batch)
-        response = StreamingResponse(writer,
-                                 media_type="text/csv"
-                                )
-    response.headers["Content-Disposition"] = "attachment; filename=export.pq"
-    return response
+    filename = f"{gettempdir()}/{uuid4()}.parquet"
+    pq.write_table(table, filename)
+    background_tasks.add_task(os.remove, filename)
+    return FileResponse(
+        filename, media_type="file/parquet", filename="vin_export.parquet"
+    )

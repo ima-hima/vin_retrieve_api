@@ -39,13 +39,13 @@ def test_lookup_fail_invalid_vin():
 
 
 def test_remove_fail_missing_vin():
-    response = client.delete("/remove")
+    response = client.get("/remove")
     assert response.status_code == 404
     assert response.json() == {"detail": "Not Found"}
 
 
 def test_remove_fail_invalid_vin():
     """This VIN doesn't exist as far as dot.gov is concerned."""
-    response = client.delete("/remove/123456")
+    response = client.get("/remove/123456")
     assert response.status_code == 404
     assert response.json() == {"detail": "Invalid VIN. VIN must be 17 characters."}

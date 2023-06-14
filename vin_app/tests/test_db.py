@@ -44,7 +44,7 @@ def test_create_vehicle():
 
 
 def test_lookup_vin_not_in_cache():
-    client.delete("/remove/1M2AX09C88M003743")
+    client.get("/remove/1M2AX09C88M003743")
     response = client.get("/lookup/1M2AX09C88M003743")
     assert response.status_code == 200
     assert response.json() == {
@@ -72,16 +72,16 @@ def test_remove_cached_vin():
     data = response.json()
     assert data["VIN"] == "1XP5DB9X7XD487964"
     assert data["Cached Result?"]
-    response = client.delete("/remove/1XP5DB9X7XD487964")
+    response = client.get("/remove/1XP5DB9X7XD487964")
     assert response.status_code == 200
     assert response.json() == {"Success": True}
     # Now make sure it's actually removed. This should return false.
-    response = client.delete("/remove/1XP5DB9X7XD487964")
+    response = client.get("/remove/1XP5DB9X7XD487964")
     assert response.status_code == 200
     assert response.json() == {"Success": False}
 
 
 def test_fail_remove_not_cached_vin():
-    response = client.delete("/remove/1XP5DB9X7XD487964")
+    response = client.get("/remove/1XP5DB9X7XD487964")
     assert response.status_code == 200
     assert not response.json()["Success"]
