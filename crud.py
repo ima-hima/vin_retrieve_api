@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from .models import Vehicle
 from . import schemas
+from .models import Vehicle
 
 
 def get_vehicle(db: Session, vin: str):

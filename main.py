@@ -1,11 +1,13 @@
+import json
 from typing import Optional
 
-import json
+import pandas as pd
+import pyarrow.parquet as pq
 import requests
 from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
+
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -20,7 +22,6 @@ def get_db():
     finally:
         db.close()
 
-
 @app.get("/")
 def root():
     raise HTTPException(
@@ -29,7 +30,7 @@ def root():
 
 
 @app.get("/lookup/{vin}")
-def lookup(vin: Optional[str] = None, db: Session = Depends(get_db)):
+async def lookup(vin: Optional[str] = None, db: Session = Depends(get_db)):
     """
     Look up VIN. Return json with following fields:
 
@@ -124,5 +125,18 @@ def remove(vin: Optional[str] = None, db: Session = Depends(get_db)):
 
 @app.get("/export")
 def export():
-    """Export entier cache as parquet file."""
-    return {"msg": "Export"}
+    """Export entire cache as parquet file."""
+    data = crud.get_all_vehicles(db)
+    # Convert to dataframe
+    columns = data.keys()
+    df = pd.DataFrame(data, columns=columns)
+    table = pa.Table.from_pandas(df)
+    # Now stream to parquet format.
+    sink = pa.BufferOutputStream()
+    with pa.ipc.new_stream(sink, batch.schema) as writer:
+        writer.write_batch(batch)
+        response = StreamingResponse(writer,
+                                 media_type="text/csv"
+                                )
+    response.headers["Content-Disposition"] = "attachment; filename=export.pq"
+    return response
