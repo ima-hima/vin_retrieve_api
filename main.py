@@ -1,7 +1,9 @@
 from typing import Optional
 
+import json
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
@@ -36,9 +38,10 @@ async def lookup(vin: Optional[str] = None):
     # just didn't change it from the example on the API usage page.
     # Also, only getting a single record on the first call because we just
     # need the number of results.
+    vehicle_details = {"Cached Result?": False}
     r = requests.get(url=url)
     desired_variables = set(["Make", "Model", "Model Year", "Body Class", "Error Code", "Error Text", "Additional Error Text",])
-    vehicle_details = {item["Variable"]: item["Value"] for item in r.json()["Results"] if item["Variable"] in desired_variables}
+    vehicle_details.update({item["Variable"]: item["Value"] for item in r.json()["Results"] if item["Variable"] in desired_variables})
     vehicle_details["VIN"] = vin
 
     if vehicle_details["Error Code"] == "1":
@@ -46,8 +49,12 @@ async def lookup(vin: Optional[str] = None):
         if vehicle_details['Additional Error Text']:
             error_message += f"{vehicle_details['Additional Error Text']}"
         raise HTTPException(status_code=404, detail=error_message)
+    else:
+        del vehicle_details["Error Code"]
+        del vehicle_details["Error Text"]
+        del vehicle_details["Additional Error Text"]
 
-    return {"msg": f"Lookup {vehicle_details}"}
+    return JSONResponse(content=vehicle_details)
 
 
 @app.get("/remove/{vin}")
@@ -60,7 +67,7 @@ async def remove(vin: Optional[str] = None):
         raise HTTPException(
             status_code=404, detail="Invalid VIN. VIN must be 17 characters."
         )
-    return {"msg": "Remove"}
+    return JSONResponse(content=json.loads(f"\{'VIN': {vin}, 'Cache Delete Success': False\}"))
 
 
 @app.get("/export")

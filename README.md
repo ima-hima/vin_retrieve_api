@@ -4,6 +4,8 @@
 
 ##### Constraints
 
+1. VIN look up is done using the DOT API. 
+1. Any VIN already looked up should be cached using a sqlite cache.
 
 ##### Required API endpoints
 
