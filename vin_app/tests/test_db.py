@@ -30,12 +30,13 @@ client = TestClient(app)
 
 
 def test_create_vehicle():
+    # Test create on vehicle not yet in cache.
     response = client.get("/lookup/1XP5DB9X7XD487964")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["VIN"] == "1XP5DB9X7XD487964"
     assert not data["Cached Result?"]
-
+    # Now test on vehicle already in cache.
     response = client.get("/lookup/1XP5DB9X7XD487964")
     assert response.status_code == 200, response.text
     data = response.json()
@@ -66,7 +67,10 @@ def test_vin_does_not_exist_at_dot():
 
 
 def test_remove_cached_vin():
+    # Put VIN into db.
     client.get("/lookup/1XP5DB9X7XD487964")
+    # Make sure VIN is in db.
+    # Test removal only if it's successfully cached.
     response = client.get("/lookup/1XP5DB9X7XD487964")
     assert response.status_code == 200, response.text
     data = response.json()
@@ -75,7 +79,8 @@ def test_remove_cached_vin():
     response = client.get("/remove/1XP5DB9X7XD487964")
     assert response.status_code == 200
     assert response.json() == {"Success": True}
-    # Now make sure it's actually removed. This should return false.
+    # Now try to remove again make sure it's actually removed.
+    # This should return false.
     response = client.get("/remove/1XP5DB9X7XD487964")
     assert response.status_code == 200
     assert response.json() == {"Success": False}

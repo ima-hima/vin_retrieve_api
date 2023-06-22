@@ -143,7 +143,6 @@ def export(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     Note that this first writes a file to the directory system, then serves the
     file, then deletes it. I was unable to get streaming to work."""
     data = [create_vehicle_dict(v) for v in crud.get_all_vehicles(db)]
-    print("\n\n**", data)
     # Convert to dataframe
     df = pd.DataFrame(data)
     # Conver to PyArrow table. Don't bother doing any fancy compression, as it's
