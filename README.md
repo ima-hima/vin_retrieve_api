@@ -18,7 +18,7 @@
       1. Body Class (String)
       1. Cached Result? (Boolean);
 
-    b. on failure (of which there are various), and http response of 404 with error message.
+    b. on failure (of which there are various), an http response of 404 with error message.
 1. `remove`, which takes a VIN and removes it, if possible, from the cache, returning
     • on success, `True`;
     • on failure (if the id is not in the cache), `False`.
