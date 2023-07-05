@@ -141,7 +141,8 @@ def export(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     Export entire cache as parquet file.
 
     Note that this first writes a file to the directory system, then serves the
-    file, then deletes it. I was unable to get streaming to work."""
+    file, then deletes it. I was unable to get streaming to work.
+    """
     data = [create_vehicle_dict(v) for v in crud.get_all_vehicles(db)]
     # Convert to dataframe
     df = pd.DataFrame(data)
